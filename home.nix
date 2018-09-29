@@ -5,7 +5,7 @@
   programs.termite = {
     enable = true;
     allowBold = true;
-    backgroundColor = "rgba(0, 0, 0, 0.5)";
+    backgroundColor = "rgba(0, 0, 0, 0.8)";
     font = "Monospace 9";
   };
 
