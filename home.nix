@@ -11,7 +11,7 @@
 
   services.polybar = {
     enable = true;
-    script = "polybar bar &";
+    script = "polybar top &";
     config = ./polybar.ini;
   };
 }
