@@ -2,6 +2,8 @@
 {
   manual.html.enable = true;
 
+  home.file.".xmonad/xmonad.hs".source = ./xmonad.hs;
+
   programs.termite = {
     enable = true;
     allowBold = true;
