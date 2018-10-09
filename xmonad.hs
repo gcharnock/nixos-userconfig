@@ -1,3 +1,5 @@
+
+import Data.Tree
 import Data.List (sortBy)
 import Data.Function (on)
 import System.Process
@@ -28,6 +30,8 @@ import XMonad.Layout.Reflect
 import XMonad.Util.NamedWindows (getName)
 import qualified XMonad.StackSet as W
 
+import XMonad.Actions.TreeSelect
+
 windowCenter = warpToWindow (1 % 6) (1 % 6)
 
 onStartup :: X ()
@@ -49,70 +53,88 @@ main = do
 --    , logHook = fadeInactiveLogHook 0.5
     , modMask = mod4Mask
     , startupHook = onStartup
-    , layoutHook = smartBorders layout
+    , layoutHook = smartBorders myLayout
     , logHook = eventLogHook
+    , workspaces = toWorkspaces myWorkspaces
     } `additionalKeys` keybindings
 
 
-keybindings = [((mod4Mask,  xK_s), cycleRecentWindows [xK_Super_L] xK_s xK_w)
-              , ((mod4Mask, xK_z), rotOpposite)
-              , ((mod4Mask                , xK_i), rotUnfocusedUp)
-              , ((mod4Mask                , xK_u), rotUnfocusedDown)
-              , ((mod4Mask .|. controlMask, xK_i), rotFocusedUp)
-              , ((mod4Mask .|. controlMask, xK_u), rotFocusedDown)
+keybindings =
+   [((mod4Mask,  xK_s), cycleRecentWindows [xK_Super_L] xK_s xK_w)
+   , ((mod4Mask, xK_z), rotOpposite) , ((mod4Mask                , xK_i), rotUnfocusedUp)
+   , ((mod4Mask                , xK_u), rotUnfocusedDown)
+   , ((mod4Mask .|. controlMask, xK_i), rotFocusedUp)
+   , ((mod4Mask .|. controlMask, xK_u), rotFocusedDown)
 
-              , ((mod4Mask                , xK_g     ), gotoMenu)
-              , ((mod4Mask                , xK_b     ), bringMenu)
+   , ((mod4Mask                , xK_g     ), gotoMenu)
+   , ((mod4Mask                , xK_b     ), bringMenu)
 
-            --  , ((mod4Mask,               xK_m     ), withFocused minimizeWindow)
-            --  , ((mod4Mask .|. shiftMask, xK_m     ), sendMessage RestoreNextMinimizedWin)
-             
-              , ((mod4Mask,                 xK_semicolon), sendMessage Expand)
+   
+   , ((mod4Mask,                 xK_semicolon), sendMessage Expand)
 
 
-              , ((mod4Mask .|. controlMask, xK_Left       ), prevScreen >> windowCenter)
-              , ((mod4Mask .|. controlMask, xK_Right      ), nextScreen >> windowCenter)
-              , ((mod4Mask .|. controlMask, xK_Down       ), shiftPrevScreen)
-              , ((mod4Mask .|. controlMask, xK_Up         ), shiftNextScreen)
-              , ((mod4Mask .|. controlMask .|. shiftMask, xK_Down       ), shiftPrevScreen >> prevScreen >> windowCenter)
-              , ((mod4Mask .|. controlMask .|. shiftMask, xK_Up         ), shiftNextScreen >> nextScreen >> windowCenter)
+   , ((mod4Mask .|. controlMask, xK_Left       ), prevScreen >> windowCenter)
+   , ((mod4Mask .|. controlMask, xK_Right      ), nextScreen >> windowCenter)
+   , ((mod4Mask .|. controlMask, xK_Down       ), shiftPrevScreen)
+   , ((mod4Mask .|. controlMask, xK_Up         ), shiftNextScreen)
+   , ((mod4Mask .|. controlMask .|. shiftMask, xK_Down       ), shiftPrevScreen >> prevScreen >> windowCenter)
+   , ((mod4Mask .|. controlMask .|. shiftMask, xK_Up         ), shiftNextScreen >> nextScreen >> windowCenter)
 
 
-              , ((mod4Mask .|. mod1Mask,               xK_l     ), sendMessage $ ExpandTowards R)
-              , ((mod4Mask .|. mod1Mask,               xK_semicolon     ), sendMessage $ ExpandTowards R)
-              , ((mod4Mask .|. mod1Mask,               xK_h     ), sendMessage $ ExpandTowards L)
-              , ((mod4Mask .|. mod1Mask,               xK_j     ), sendMessage $ ExpandTowards D)
-              , ((mod4Mask .|. mod1Mask,               xK_k     ), sendMessage $ ExpandTowards U)
-              , ((mod4Mask .|. mod1Mask .|. controlMask , xK_l     ), sendMessage $ ShrinkFrom R)
-              , ((mod4Mask .|. mod1Mask .|. controlMask , xK_semicolon     ), sendMessage $ ShrinkFrom R)
-              , ((mod4Mask .|. mod1Mask .|. controlMask , xK_h     ), sendMessage $ ShrinkFrom L)
-              , ((mod4Mask .|. mod1Mask .|. controlMask , xK_j     ), sendMessage $ ShrinkFrom D)
-              , ((mod4Mask .|. mod1Mask .|. controlMask , xK_k     ), sendMessage $ ShrinkFrom U)
+   , ((mod4Mask .|. mod1Mask,               xK_l     ), sendMessage $ ExpandTowards R)
+   , ((mod4Mask .|. mod1Mask,               xK_semicolon     ), sendMessage $ ExpandTowards R)
+   , ((mod4Mask .|. mod1Mask,               xK_h     ), sendMessage $ ExpandTowards L)
+   , ((mod4Mask .|. mod1Mask,               xK_j     ), sendMessage $ ExpandTowards D)
+   , ((mod4Mask .|. mod1Mask,               xK_k     ), sendMessage $ ExpandTowards U)
+   , ((mod4Mask .|. mod1Mask .|. controlMask , xK_l     ), sendMessage $ ShrinkFrom R)
+   , ((mod4Mask .|. mod1Mask .|. controlMask , xK_semicolon     ), sendMessage $ ShrinkFrom R)
+   , ((mod4Mask .|. mod1Mask .|. controlMask , xK_h     ), sendMessage $ ShrinkFrom L)
+   , ((mod4Mask .|. mod1Mask .|. controlMask , xK_j     ), sendMessage $ ShrinkFrom D)
+   , ((mod4Mask .|. mod1Mask .|. controlMask , xK_k     ), sendMessage $ ShrinkFrom U)
 
-              , ((mod4Mask,                           xK_r     ), sendMessage RotateL)
-              , ((mod4Mask,                           xK_d     ), sendMessage Swap)
-              , ((mod4Mask,                           xK_n     ), sendMessage FocusParent)
-              , ((mod4Mask .|. controlMask,           xK_n     ), sendMessage SelectNode)
-              , ((mod4Mask .|. shiftMask,             xK_n     ), sendMessage MoveNode)
+   , ((mod4Mask,                           xK_r     ), sendMessage RotateL)
+   , ((mod4Mask,                           xK_d     ), sendMessage Swap)
+   , ((mod4Mask,                           xK_n     ), sendMessage FocusParent)
+   , ((mod4Mask .|. controlMask,           xK_n     ), sendMessage SelectNode)
+   , ((mod4Mask .|. shiftMask,             xK_n     ), sendMessage MoveNode)
 
-              , ((mod4Mask,               xK_a),     sendMessage Balance)
-              , ((mod4Mask .|. shiftMask, xK_a),     sendMessage Equalize)
-              ]
+   , ((mod4Mask,               xK_a),     sendMessage Balance)
+   , ((mod4Mask .|. shiftMask, xK_a),     sendMessage Equalize)
 
+   , ((mod4Mask, xK_f), treeselectWorkspace tsDefaultConfig myWorkspaces W.greedyView)
+   , ((mod4Mask .|. shiftMask, xK_f), treeselectWorkspace tsDefaultConfig myWorkspaces W.shift)
+   ]
+
+myWorkspaces :: Forest String
+myWorkspaces = [ Node "Browser" []
+               , Node "Home"
+                   [ Node "1" []
+                   , Node "2" []
+                   , Node "3" []
+                   , Node "4" []
+                   ]
+               , Node "ZL"
+                   [ Node "Lobby" []
+                   , Node "VEDriver" []
+                   ]
+               , Node "Background"
+                   [ Node "Spotify" []
+                   ]
+               ]
 -- togglevga = do
 --   screencount <- LIS.countScreens
 --   if screencount > 1
 --    then spawn "xrandr --output VGA-2 --off"
 --    else spawn "xrandr --output VGA-1 --auto --left-of VGA-2"
 
-layout = (spacing 6 $ layouts) ||| (minimize $ Full)
+myLayout = (spacing 6 $ layouts) ||| Full
   where
     layouts = avoidStruts (
       emptyBSP |||
       tiled ||| 
-      myMultiCols ||| 
-      drawer `onLeft` tiled |||
-      drawer `onLeft` myMultiCols |||
+      -- myMultiCols ||| 
+      --drawer `onLeft` tiled |||
+      --drawer `onLeft` myMultiCols |||
       Mirror tiled)
     mumble = ClassName "Mumble" `Or` ClassName "mumble"
     telegram = Title "Telegram" `And` ClassName "TelegramDesktop"
@@ -143,7 +165,7 @@ eventLogHook = do
   let wsStr = join $ map (fmt currWs) $ sort' wss
 
   io $ appendFile "/tmp/.xmonad-title-log" (title ++ "\n")
-  io $ appendFile "/tmp/.xmonad-workspace-log" (wsStr ++ "\n")
+  io $ appendFile "/tmp/.xmonad-workspace-log" (currWs ++ "\n")
 
   where fmt currWs ws
           | currWs == ws = "[" ++ ws ++ "]"
