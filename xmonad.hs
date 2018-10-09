@@ -107,7 +107,7 @@ keybindings =
 
 myWorkspaces :: Forest String
 myWorkspaces = [ Node "Browser" []
-               , Node "Home"
+               , Node "General"
                    [ Node "1" []
                    , Node "2" []
                    , Node "3" []
@@ -116,6 +116,9 @@ myWorkspaces = [ Node "Browser" []
                , Node "ZL"
                    [ Node "Lobby" []
                    , Node "VEDriver" []
+                   ]
+               , Node "NixOS"
+                   [ Node "Home Manager" []
                    ]
                , Node "Background"
                    [ Node "Spotify" []
