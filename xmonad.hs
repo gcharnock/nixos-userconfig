@@ -29,6 +29,7 @@ import XMonad.Layout.MultiColumns
 import XMonad.Layout.Reflect
 import XMonad.Util.NamedWindows (getName)
 import qualified XMonad.StackSet as W
+import XMonad.Layout.Tabbed
 
 import XMonad.Actions.TreeSelect
 
@@ -117,11 +118,15 @@ myWorkspaces = [ Node "Browser" []
                    [ Node "Lobby" []
                    , Node "VEDriver" []
                    ]
+               , Node "Projects"
+                   [ Node "inotify" []
+                   ]
                , Node "NixOS"
                    [ Node "Home Manager" []
                    ]
                , Node "Background"
                    [ Node "Spotify" []
+                   , Node "hoogle" []
                    ]
                ]
 -- togglevga = do
@@ -134,6 +139,7 @@ myLayout = (spacing 6 $ layouts) ||| Full
   where
     layouts = avoidStruts (
       emptyBSP |||
+      simpleTabbed |||
       tiled ||| 
       -- myMultiCols ||| 
       --drawer `onLeft` tiled |||
