@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 import Data.Tree
 import Data.List (sortBy)
@@ -59,6 +61,21 @@ main = do
     , workspaces = toWorkspaces myWorkspaces
     } `additionalKeys` keybindings
 
+data MyMessage = MyMessage
+
+instance Message MyMessage
+
+data MyLayout a = MyLayout
+  deriving Show
+
+instance (Show a) => LayoutClass MyLayout a where
+    pureMessage self msg = do
+        MyMessage <- fromMessage msg
+        return MyLayout
+
+    pureLayout self rect stack = []
+    emptyLayout self rect = return ([], Nothing)
+
 
 keybindings =
    [((mod4Mask,  xK_s), cycleRecentWindows [xK_Super_L] xK_s xK_w)
@@ -73,6 +90,7 @@ keybindings =
    
    , ((mod4Mask,                 xK_semicolon), sendMessage Expand)
 
+   , ((mod3Mask, xK_f), sendMessage (ExpandTowards R) >> sendMessage MyMessage)
 
    , ((mod4Mask .|. controlMask, xK_Left       ), prevScreen >> windowCenter)
    , ((mod4Mask .|. controlMask, xK_Right      ), nextScreen >> windowCenter)
