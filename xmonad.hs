@@ -65,16 +65,16 @@ data MyMessage = MyMessage
 
 instance Message MyMessage
 
-data MyLayout a = MyLayout
+data MyLayout l a = MyLayout l
   deriving Show
 
-instance (Show a) => LayoutClass MyLayout a where
-    pureMessage self msg = do
-        MyMessage <- fromMessage msg
-        return MyLayout
-
-    pureLayout self rect stack = []
-    emptyLayout self rect = return ([], Nothing)
+instance (Show a, LayoutClass l a) => LayoutClass (MyLayout (l  a)) a where
+    runLayout (W.Workspace wsId (MyLayout l) a) rect = do
+        (windows, maybeLayout) <- runLayout (W.Workspace wsId l a) rect
+        return (windows, fmap MyLayout maybeLayout)
+    handleMessage (MyLayout l) msg = do
+        maybeLayout <- handleMessage l msg
+        return $ fmap MyLayout maybeLayout
 
 
 keybindings =
