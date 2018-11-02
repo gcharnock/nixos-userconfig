@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 import Data.Tree
@@ -65,16 +66,34 @@ data MyMessage = MyMessage
 
 instance Message MyMessage
 
-data MyLayout l a = MyLayout l
-  deriving Show
+data FSState = FullScreen | NotFullScreen
+  deriving (Show, Read)
 
-instance (Show a, LayoutClass l a) => LayoutClass (MyLayout (l  a)) a where
-    runLayout (W.Workspace wsId (MyLayout l) a) rect = do
-        (windows, maybeLayout) <- runLayout (W.Workspace wsId l a) rect
-        return (windows, fmap MyLayout maybeLayout)
-    handleMessage (MyLayout l) msg = do
-        maybeLayout <- handleMessage l msg
-        return $ fmap MyLayout maybeLayout
+data MyLayout l a = MyLayout FSState (l a) 
+  deriving (Show, Read)
+
+instance (Show a, LayoutClass l a) => LayoutClass (MyLayout l) a where
+    runLayout (W.Workspace wsId (MyLayout fsState l) a) rect =
+        case fsState of
+            NotFullScreen -> do
+                (windows, maybeLayout) <- runLayout (W.Workspace wsId l a) rect
+                return (windows, fmap (\l -> MyLayout fsState l) maybeLayout)
+            FullScreen -> do
+                (windows, _) <- runLayout (W.Workspace wsId Full a) rect
+                return (windows, Nothing)
+
+    handleMessage (MyLayout fsState l) msg = do
+        let maybeSwap = fromMessage msg
+        case maybeSwap of
+            Nothing -> do
+                maybeLayout <- handleMessage l msg
+                return $ fmap (\l -> MyLayout fsState l) maybeLayout
+            Just MyMessage -> do
+                case fsState of
+                    FullScreen ->
+                        return $ Just $ MyLayout NotFullScreen l
+                    NotFullScreen ->
+                        return $ Just $ MyLayout FullScreen l
 
 
 keybindings =
@@ -90,7 +109,7 @@ keybindings =
    
    , ((mod4Mask,                 xK_semicolon), sendMessage Expand)
 
-   , ((mod3Mask, xK_f), sendMessage (ExpandTowards R) >> sendMessage MyMessage)
+   , ((mod3Mask, xK_f), sendMessage MyMessage)
 
    , ((mod4Mask .|. controlMask, xK_Left       ), prevScreen >> windowCenter)
    , ((mod4Mask .|. controlMask, xK_Right      ), nextScreen >> windowCenter)
@@ -153,7 +172,7 @@ myWorkspaces = [ Node "Browser" []
 --    then spawn "xrandr --output VGA-2 --off"
 --    else spawn "xrandr --output VGA-1 --auto --left-of VGA-2"
 
-myLayout = (spacing 6 $ layouts) ||| Full
+myLayout = MyLayout NotFullScreen $ (spacing 6 $ layouts) ||| Full
   where
     layouts = avoidStruts (
       emptyBSP |||
