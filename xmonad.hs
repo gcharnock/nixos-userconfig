@@ -34,6 +34,8 @@ import XMonad.Util.NamedWindows (getName)
 import qualified XMonad.StackSet as W
 import XMonad.Layout.Tabbed
 
+import qualified XMonad.Layout.ToggleLayout as My
+
 import XMonad.Actions.TreeSelect
 
 windowCenter = warpToWindow (1 % 6) (1 % 6)
@@ -62,39 +64,6 @@ main = do
     , workspaces = toWorkspaces myWorkspaces
     } `additionalKeys` keybindings
 
-data MyMessage = MyMessage
-
-instance Message MyMessage
-
-data FSState = FullScreen | NotFullScreen
-  deriving (Show, Read)
-
-data MyLayout l a = MyLayout FSState (l a) 
-  deriving (Show, Read)
-
-instance (Show a, LayoutClass l a) => LayoutClass (MyLayout l) a where
-    runLayout (W.Workspace wsId (MyLayout fsState l) a) rect =
-        case fsState of
-            NotFullScreen -> do
-                (windows, maybeLayout) <- runLayout (W.Workspace wsId l a) rect
-                return (windows, fmap (\l -> MyLayout fsState l) maybeLayout)
-            FullScreen -> do
-                (windows, _) <- runLayout (W.Workspace wsId Full a) rect
-                return (windows, Nothing)
-
-    handleMessage (MyLayout fsState l) msg = do
-        let maybeSwap = fromMessage msg
-        case maybeSwap of
-            Nothing -> do
-                maybeLayout <- handleMessage l msg
-                return $ fmap (\l -> MyLayout fsState l) maybeLayout
-            Just MyMessage -> do
-                case fsState of
-                    FullScreen ->
-                        return $ Just $ MyLayout NotFullScreen l
-                    NotFullScreen ->
-                        return $ Just $ MyLayout FullScreen l
-
 keybindings :: [((KeyMask, KeySym), X ())]
 keybindings =
    [((mod4Mask,  xK_s), cycleRecentWindows [xK_Super_L] xK_s xK_w)
@@ -109,8 +78,8 @@ keybindings =
    
    , ((mod4Mask,                 xK_semicolon), sendMessage Expand)
 
-   , ((mod3Mask, xK_f), sendMessage MyMessage)
-   , ((mod4Mask, xK_F11), sendMessage MyMessage)
+   , ((mod3Mask, xK_f), sendMessage My.MsgToggleFS)
+   , ((mod4Mask, xK_F11), sendMessage My.MsgToggleFS)
 
    , ((mod4Mask .|. controlMask, xK_Left       ), prevScreen >> windowCenter)
    , ((mod4Mask .|. controlMask, xK_Right      ), nextScreen >> windowCenter)
@@ -173,7 +142,7 @@ myWorkspaces = [ Node "Browser" []
 --    then spawn "xrandr --output VGA-2 --off"
 --    else spawn "xrandr --output VGA-1 --auto --left-of VGA-2"
 
-myLayout = MyLayout NotFullScreen $ (spacing 6 $ layouts) 
+myLayout = My.addToggles $ (spacing 6 $ layouts) 
   where
     layouts = avoidStruts (
       emptyBSP |||
