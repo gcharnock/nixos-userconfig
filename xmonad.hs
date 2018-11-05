@@ -95,7 +95,7 @@ instance (Show a, LayoutClass l a) => LayoutClass (MyLayout l) a where
                     NotFullScreen ->
                         return $ Just $ MyLayout FullScreen l
 
-
+keybindings :: [((KeyMask, KeySym), X ())]
 keybindings =
    [((mod4Mask,  xK_s), cycleRecentWindows [xK_Super_L] xK_s xK_w)
    , ((mod4Mask, xK_z), rotOpposite) , ((mod4Mask                , xK_i), rotUnfocusedUp)
@@ -110,6 +110,7 @@ keybindings =
    , ((mod4Mask,                 xK_semicolon), sendMessage Expand)
 
    , ((mod3Mask, xK_f), sendMessage MyMessage)
+   , ((mod4Mask, xK_F11), sendMessage MyMessage)
 
    , ((mod4Mask .|. controlMask, xK_Left       ), prevScreen >> windowCenter)
    , ((mod4Mask .|. controlMask, xK_Right      ), nextScreen >> windowCenter)
@@ -172,7 +173,7 @@ myWorkspaces = [ Node "Browser" []
 --    then spawn "xrandr --output VGA-2 --off"
 --    else spawn "xrandr --output VGA-1 --auto --left-of VGA-2"
 
-myLayout = MyLayout NotFullScreen $ (spacing 6 $ layouts) ||| Full
+myLayout = MyLayout NotFullScreen $ (spacing 6 $ layouts) 
   where
     layouts = avoidStruts (
       emptyBSP |||
